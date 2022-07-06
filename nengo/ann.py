@@ -5,13 +5,13 @@ class Model(tf.keras.Model):
     def __init__(self, ns=10):
         super(Model, self).__init__()
         # initialize layers
-        self.layer_list = [tf.keras.layers.Dense(units=ns, activation=tf.nn.sigmoid,
+        self.layer_list = [tf.keras.layers.Dense(units=ns, activation=tf.nn.silu,
                                                  kernel_initializer=tf.random_normal_initializer(),
                                                  bias_initializer=tf.random_normal_initializer()),
                            tf.keras.layers.Dense(units=ns, activation=tf.nn.sigmoid,
                                                  kernel_initializer=tf.random_normal_initializer(),
                                                  bias_initializer=tf.random_normal_initializer()),
-                           tf.keras.layers.Dense(units=1, activation=tf.nn.relu,
+                           tf.keras.layers.Dense(units=1, activation=tf.nn.selu,
                                                  kernel_initializer=tf.random_normal_initializer(),
                                                  bias_initializer=tf.random_normal_initializer())
 

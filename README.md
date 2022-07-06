@@ -1,23 +1,28 @@
 # Neurodynamics-Group5
-## current state /updates
-- the code to train the ANN, store the results, and run the conversion with SNN toolbox (but using INI simulator) is in `run_ann_training.py"
-- the code cannot currently succesfully run on other machines as the code for the snn toolbox has to be modified for this to work
+## File structure / remarks
+- the code to train the ANN, store the results, and run the conversion with SNN toolbox is in `run_ann_training.py"
 - results are in `temp/`, each subfolder is one run, ideally the plots are in a subfolder of those called plots (not the case for all runs, as it was not implemented for the first few runs), collected metrics are stored in `metrics.txt`, hyperparameters used in `hyperparameters.txt`, and activations used for the NN layers in `activations.txt`. Not all files might be available for the first runs.
 - order of collected metrics in `metrics.txt`: de_names, final_losses, final_errors, first_epoch_under_threshold, time_to_threshold, total_training_time
-
-
 
 ## How to use
 - clone this repository
 - Install conda (e.g. https://www.anaconda.com/) if you don't have already
-- create a new environment and install pip in it with `conda create -n env_name pip`, substituting env_name with a name of your liking
-- activate the environment `conda activate env_name`
-- navigate into the cloned repo
-- Testing the SNN toolbox:
+
+### Running the ANN (and conversion) / adding DEs:
+  - create a new environment with a working python version and pip running `conda create -n env_name python==3.9.12 pip`, substituting env_name with a name of your liking
+  - activate the environment `conda activate env_name`
+  - navigate into the cloned repo
+  - install the required libraries with `pip install -r requirements.txt`
+  - finish setting up the spinnaker library by running `python -m spynnaker8.setup_pynn`
+  - you might have to edit the `.spynnaker.cfg` file that should be located in your home directory (if it does not exist yet it will be created after running the code once) – setting `virtual_board = True` and setting the `width` and `height` to allowed values (e.g. 2) – see https://spinnakermanchester.github.io/spynnaker/5.0.0/PyNNOnSpinnakerInstall.html#Configuration for more information
+  
+### Testing the SNN toolbox:
+  - create a new environment and install pip in it with `conda create -n env_name pip`, substituting env_name with a name of your liking
+  - activate the environment `conda activate env_name`
+  - navigate into the LibraryTests folder of the cloned repo
   - install the required libraries with `pip install -r requirements.txt`
   - run the `toolbox_test` to train the ann and convert it with the snn toolbox -> `python LibraryTests/toolbox_test.py`
-- Running the ANN / adding DEs:
-  -  no requirements.txt provided at the moment, just run it and install the missing packages it complains about
+
 
 ## Implementiing DEs for the ANN to solve
 `run_ann_des.py` contains the class for simple implementation of DEs as well as some already implemented DEs as examples and the (not completely finished) code to train the ANN to solve the equations.
