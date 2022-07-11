@@ -1,14 +1,17 @@
 [paths]
 path_wd = /home/hannah/Documents/A0_uni/S6/Neurodynamics/Neurodynamics-Group5/temp/1656320855.4205096
 dataset_path = /home/hannah/Documents/A0_uni/S6/Neurodynamics/Neurodynamics-Group5/temp/1656320855.4205096
-filename_ann = third_order_v2
+filename_ann = test_de
 
 [tools]
-evaluate_ann = True
+evaluate_ann = False
+parse = True
 normalize = False
+convert = True
+simulate = True
 
 [simulation]
-simulator = INI
+simulator = spiNNaker
 duration = 50
 num_to_test = 400
 batch_size = 400
@@ -17,6 +20,9 @@ keras_backend = tensorflow
 [input]
 model_lib = keras
 
+[cell]
+v_thresh = 0.01
+
 [output]
-plot_vars = {'activations', 'correlation', 'v_mem', 'spikerates', 'spiketrains', 'error_t'}
+plot_vars = {'correlation', 'activations', 'spiketrains', 'spikerates', 'error_t', 'v_mem'}
 
