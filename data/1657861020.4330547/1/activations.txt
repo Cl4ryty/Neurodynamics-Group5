@@ -1,0 +1,4 @@
+<function swish at 0x7fae86ef54d0>
+<function sigmoid at 0x7fae8a9e7a70>
+<function sigmoid at 0x7fae8a9e7a70>
+<function selu at 0x7fae8aaa4050>

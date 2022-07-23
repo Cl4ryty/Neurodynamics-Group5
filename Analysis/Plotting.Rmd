@@ -1,0 +1,163 @@
+---
+title: "Neurodynamics"
+output: html_document
+date: "2022-07-21"
+---
+
+```{r setup, include=FALSE}
+# remember to set the wd to the dir where this file is located (session > set wd > to source file location)
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(rstudioapi)
+library(lubridate)
+```
+
+
+
+```{r echo = FALSE, echo=FALSE, warning=FALSE, message=FALSE}
+# load the data
+path <- "../data/1657861020.4330547/"
+p <-paste(path, "0/metrics.txt", sep="")
+header <- scan(paste(path, "0/metrics.txt", sep=""), nlines = 1, what = character(), sep = ",")
+header[1] <- "de_names"
+data <- read.delim(paste(path, "0/metrics.txt", sep=""), header = FALSE, sep = ",", skip = 1)
+names(data) <- header
+t_data <- read.delim("time_metrics.csv", header = TRUE, sep = ",")
+
+# exclude second_order_euler_test as it was just a test with a different input range than the actual ont to be learned
+data <- data[data$de_names != "second_order_euler_test", ]
+t_data <- t_data[t_data$de_names != "second_order_euler_test", ]
+
+
+names <- c("linear_1st_order_1", "linear_1st_order_2", "linear_1st_order_3", "linear_2nd_order_1", "linear_2nd_order_2", "linear_2nd_order_3", "linear_2nd_order_4", "linear_2nd_order_5", "linear_2nd_order_6", "linear_2nd_order_7", "linear_3rd_order_1", "linear_3rd_order_2", "linear_3rd_order_3", "nonlinear_1st_order_1", "nonlinear_1st_order_2", "nonlinear_2nd_order_1", "nonlinear_2nd_order_2", "nonlinear_2nd_order_3", "nonlinear_2nd_order_4", "nonlinear_2nd_order_5", "nonlinear_3rd_order_1", "nonlinear_3rd_order_2")
+
+
+print(names)
+
+a <- rep(names, times=max(t_data$run_nb+1))
+t_data$names <- t_data$de_names
+t_data$de_names <- a
+
+data$names <- data$de_names
+data$de_names <- names
+print(data)
+```
+
+
+```{r echo = FALSE, echo=FALSE, warning=FALSE, message=FALSE}
+d <- na.omit(data)
+d$` final_losses`
+d <- d[d$final_losses < 10, ]
+
+
+# create columns for linearity and order
+d$is_linear <- TRUE
+d$is_linear[grep("nonlinear", d$de_names)] <- FALSE
+d$order <- 0
+d$order[grep("1st", d$de_names)] <- 1
+d$order[grep("2nd", d$de_names)] <- 2
+d$order[grep("3rd", d$de_names)] <- 3
+
+d$is_linear <- factor(d$is_linear, levels = c("TRUE", "FALSE"))
+d$order <- factor(d$order)
+
+
+td <- t_data
+# create columns for linearity and order
+td$is_linear <- TRUE
+td$is_linear[grep("nonlinear", td$de_names)] <- FALSE
+td$order <- 0
+td$order[grep("1st", td$de_names)] <- 1
+td$order[grep("2nd", td$de_names)] <- 2
+td$order[grep("3rd", td$de_names)] <- 3
+
+td$is_linear <- factor(td$is_linear, levels = c("TRUE", "FALSE"))
+td$order <- factor(td$order)
+
+
+```
+
+
+## Plots 
+```{r echo = FALSE, echo=FALSE, warning=FALSE, message=FALSE}
+grouped_d <- d%>%group_by(is_linear, order)
+
+means_d <- d %>% group_by(is_linear, order) %>% summarize(mean_fl = mean(final_losses, na.rm=T), median_fl=median(final_losses, na.rm=T))
+write_csv(means_d, "final_losses_means_medians.csv")
+d <- left_join(d, means_d)
+
+ggplot(d) +
+  geom_boxplot(aes(x=is_linear, y=final_losses, fill=order), position=position_dodge(0.9)) +
+  #geom_point(aes(x=ID, y=RMSSD), fill = "blue", alpha = 0.3) +
+  geom_point(aes(x=is_linear, y=mean_fl, fill = order), color="black", pch = 21, size=2, position = position_dodge(.9))+
+  scale_fill_manual(values=c("orchid", "lightgreen", "lightblue"), aesthetics = c("color", "fill"))+
+  labs(x="",
+       y="",
+       title = "Final loss",
+       fill = "Order")+
+  theme_minimal()+
+  scale_y_log10()+
+  theme(panel.grid.major.x = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 18, face = "bold", margin = margin(10,0,15,0)),
+        plot.margin = margin(0,0,40,0))+
+  scale_x_discrete(labels = c("linear", "nonlinear"))
+
+
+
+ggplot(d)+
+  geom_col(aes(x=de_names, y=final_losses, fill=order), position=position_dodge(0.9))+
+  scale_fill_manual(values=c("orchid", "lightgreen", "lightblue"), aesthetics = c("color", "fill"))+
+  labs(x="",
+       y="",
+       title = "Final loss",
+       fill = "Order")+
+  theme_minimal()+
+  scale_y_log10()+
+  theme(panel.grid.major.x = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 18, face = "bold", margin = margin(10,0,15,0)),
+        plot.margin = margin(0,0,40,0),
+        axis.text.x = element_text(angle=90))
+
+
+
+means_td <- td %>% group_by(is_linear, order) %>% summarize(mean_tt = mean(total_training_time, na.rm=T), median_tt=median(total_training_time, na.rm=T))
+td <- left_join(td, means_td)
+write_csv(means_td, "training_time_means_medians.csv")
+
+
+
+ggplot(td) +
+  geom_boxplot(aes(x=is_linear, y=total_training_time, fill=order), position = position_dodge(.9)) +
+  geom_point(aes(x=is_linear, y=mean_tt, fill = order), color="black", pch = 21, size=2, position = position_dodge(.9))+
+  scale_fill_manual(values=c("orchid", "lightgreen", "lightblue"), aesthetics = c("color", "fill"))+
+  labs(x="",
+       y="",
+       title="Total training time (in s)",
+       fill = "Order")+
+  theme_minimal()+
+  # scale_y_log10()+
+  theme(panel.grid.major.x = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 18, face = "bold", margin = margin(10,0,15,0)),
+        plot.margin = margin(0,0,40,0))+
+  scale_x_discrete(labels = c("linear", "nonlinear"))
+
+ggplot(td)+
+  geom_col(aes(x=de_names, y=total_training_time, fill=order), position=position_dodge())+
+  scale_fill_manual(values=c("orchid", "lightgreen", "lightblue"), aesthetics = c("color", "fill"))+
+  labs(x="",
+       y="",
+       title="Total training time (in s)",
+       fill = "Order")+
+  theme_minimal()+
+  # scale_y_log10()+
+  theme(panel.grid.major.x = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 18, face = "bold", margin = margin(10,0,15,0)),
+        plot.margin = margin(0,0,40,0),
+        axis.text.x = element_text(angle=90))
+  
+  
+```
+
+
