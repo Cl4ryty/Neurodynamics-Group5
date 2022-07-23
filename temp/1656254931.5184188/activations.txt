@@ -1,4 +1,0 @@
-<function sigmoid at 0x7f54cffdfca0>
-<function relu at 0x7f54d00b63a0>
-<function tanh at 0x7f54d0731670>
-<function relu at 0x7f54d00b63a0>

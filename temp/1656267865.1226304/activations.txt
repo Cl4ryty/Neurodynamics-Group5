@@ -1,4 +1,0 @@
-<function tanh at 0x7fadd5dfa670>
-<function sigmoid at 0x7fadd56a8ca0>
-<function tanh at 0x7fadd5dfa670>
-<function linear at 0x7fada98a28b0>

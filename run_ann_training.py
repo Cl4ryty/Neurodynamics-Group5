@@ -1,67 +1,13 @@
 import tensorflow as tf
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import dill as pickle
 import os
 import time
+from pretty_plots import pretty_plot_settings
 
-import seaborn as sns
-
-sns.set(font='Franklin Gothic Book',
-        rc={
-            'axes.axisbelow': False,
-            'axes.edgecolor': 'lightgrey',
-            'axes.facecolor': 'None',
-            'axes.grid': False,
-            'axes.labelcolor': 'dimgrey',
-            'axes.spines.right': False,
-            'axes.spines.top': False,
-            'figure.facecolor': 'white',
-            'lines.solid_capstyle': 'round',
-            'patch.edgecolor': 'w',
-            'patch.force_edgecolor': True,
-            'text.color': 'dimgrey',
-            'xtick.bottom': False,
-            'xtick.color': 'dimgrey',
-            'xtick.direction': 'out',
-            'xtick.top': False,
-            'ytick.color': 'dimgrey',
-            'ytick.direction': 'out',
-            'ytick.left': False,
-            'ytick.right': False,
-            'figure.autolayout': True})
-
-sns.set_context("notebook", rc={"font.size": 16,
-                                "axes.titlesize": 20,
-                                "axes.labelsize": 16})
-
-
-# for prettier plots
-CB91_Blue = '#2CBDFE'
-CB91_Green = '#47DBCD'
-CB91_Pink = '#F3A0F2'
-CB91_Purple = '#9D2EC5'
-CB91_Violet = '#661D98'
-CB91_Amber = '#F5B14C'
-color_list = [CB91_Blue, CB91_Pink, CB91_Green, CB91_Amber,
-              CB91_Purple, CB91_Violet]
-plt.rcParams['axes.prop_cycle'] = plt.cycler(color=color_list)
-
-# create sequential model -> not actually used as the model is set again in before the training
-ns = 10
-model = tf.keras.Sequential([tf.keras.layers.Dense(units=ns, activation=tf.nn.sigmoid,
-                                                   kernel_initializer=tf.random_normal_initializer(),
-                                                   bias_initializer=tf.random_normal_initializer(), name="first",
-                                                   input_shape=(1,)),
-                             tf.keras.layers.Dense(units=ns, activation=tf.nn.sigmoid,
-                                                   kernel_initializer=tf.random_normal_initializer(),
-                                                   bias_initializer=tf.random_normal_initializer(), name="second"),
-                             tf.keras.layers.Dense(units=1, activation=tf.nn.relu,
-                                                   kernel_initializer=tf.random_normal_initializer(),
-                                                   bias_initializer=tf.random_normal_initializer(), name="third")
-
-                             ])
+# make plots look better
+pretty_plot_settings()
 
 
 def training_step(model, input, loss_function, optimizer):
@@ -86,18 +32,29 @@ def training_step(model, input, loss_function, optimizer):
 
 
 # class for simple DE implementation
+# due to using the model in the loss function (which is necessary to be able to solve the DE) this class needs to be
+#   defined in the same scope (e.g. script) the training takes place and the model needs to be referenced with the
+#   variable name "model"
 class DE:
     def __init__(self, name, input_min, input_max, eq, order, ic_x, ic_y, solution):
         """
         Creates an object containing all necessary information for solving a DE with a NN and evaluating the solution.
 
         :param str name: The name of the equation.
-        :param float input_min:
-        :param float input_max:
-        :param eq: lambda function specifying the equation with parameters df_dx, f, x – "lambda df_dx, f, x: …" – with df_dx
-        :param int order: the order of the equation (i.e. the highest order of derivative it contains), e.g. 2 for a second order DE. Currently supports only equations of order 1 - 4
-        :param list[float] ic_x: list of x values of the initial conditions, e.g. for the initial conditions f(x=0)=1 and f(2)=3 this is [0., 2.]
-        :param list[float] ic_y: list of y values of the initial conditions, e.g. for the initial conditions f(x=0)=1 and f(2)=3 this is [1., 3.]
+        :param float input_min: The lower bound (inclusive) of the input range the DE is to be solved in.
+        :param float input_max: The upper bound (inclusive) of the input range the DE is to be solved in.
+        :param eq: lambda function specifying the differential equation with parameters
+            df_dx, (df_dxx, df_dxxx, df_dxxxx), f, x – "lambda df_dx, df_dxx, f, x: …" – with df_dx being the first derivative,
+            df_dxx the second derivative, f the function to be found, x the input.
+            The lambda parameters should always be the derivatives in ascending order (1st to nth), the function,
+            and the input, and the number of derivatives included should be equal to the order of the DE,
+            even if the DE itself does not contain all of them.
+        :param int order: the order of the equation (i.e. the highest order of derivative it contains),
+            e.g. 2 for a second order DE. Currently, supports only equations of order 1 - 4
+        :param list[float] ic_x: list of x values of the initial conditions,
+            e.g. for the initial conditions f(x=0)=1 and f(2)=3 this is [0., 2.]
+        :param list[float] ic_y: list of y values of the initial conditions,
+            e.g. for the initial conditions f(x=0)=1 and f(2)=3 this is [1., 3.]
         :param solution: lambda function of the solution, containing one parameter x, i.e. "lambda x: …"
         """
         # raise error if order is out of currently supported range
@@ -112,32 +69,73 @@ class DE:
         self.ic_x = ic_x
         self.ic_y = ic_y
         self.solution = solution
+        self.loss_func = None
 
     def get_inputs(self, number_points):
+        """
+        Returns a tensor of shape (number_points, 1) with number_points evenly spaced values covering the input range of the
+        DE.
+
+        :param int number_points: The number of points in the input space to be returned.
+        :return: number_points evenly spaced values covering the input range of the DE.
+        :rtype: tf.Tensor
+        """
         inputs = tf.linspace(self.input_min, self.input_max, num=number_points)
         inputs = tf.expand_dims(inputs, -1)
         return inputs
 
     def analytical_solution(self, x):
-        return self.solution(x)
+        """
+        Returns the solution for the given values using the DEs solution if it was provided.
+
+        :param tf.Tensor x: The values for which the solution should be computed.
+        :return: The solution for the provided x values if a solution function was provided duing DE initialization.
+        :rtype: tf.Tensor
+        """
+        if self.solution is not None:
+            return self.solution(x)
 
     def get_loss_function(self):
+        """
+        Returns the loss function for the DE. The loss function is decorated with tf.function and complies with the
+         standard signature tensorflow expects for loss functions, so it takes the parameters y_true and y_pred.
+         However, only y_true is used and is expected to be the input x for which the NN should approximate the
+         solution to the DE.
+        :return: The loss function for the DE
+        """
+        if self.loss_func is None:
+            self.loss_func = self.__make_ann_loss_func()
         return self.__make_ann_loss_func()
 
     def __make_ann_loss_func(self):
 
         @tf.function
         def ann_loss_function(y_true, y_pred):
+            """
+            Loss function for solving a DE with an ANN. Only the parameter y_true is used and is expected to be the
+            input values – x – for which the ANN should approximate the solution to the DE.
+
+            :param y_true: The input values for which the ANN should approximate the DE's solution.
+            :param y_pred: Not used.
+            :return: The calculated loss.
+            """
             x = y_true
+
+            # gradient tapes for calculating the derivatives
             with tf.GradientTape() as tape4:
                 with tf.GradientTape() as tape3:
                     with tf.GradientTape() as tape2:
                         with tf.GradientTape() as tape1:
+                            # need to explicitly watch x to be able to calculate gradients/derivatives afterwards
                             tape1.watch(x)
                             tape2.watch(x)
                             tape3.watch(x)
                             tape4.watch(x)
+                            # get the output of the ANN
+                            # -> assumes that the ANN can be referenced via the variable name "model"
                             f = model(x)
+
+                            # calculate the derivatives and put the values in the DE
                             df_dx = tape1.gradient(f, x)
                             if self.order == 1:
                                 eq = self.eq(df_dx, f, x)
@@ -153,11 +151,11 @@ class DE:
                                 df_dxxxx = tape4.gradient(df_dxxx, x)
                                 if self.order == 4:
                                     eq = self.eq(df_dx, df_dxx, df_dxxx, df_dxxxx, f, x)
-
+                # get the initial conditions
                 ic = 0.0
                 for ic_x, ic_y in zip(self.ic_x, self.ic_y):
                     ic += tf.square(model(tf.constant(ic_x, shape=(1, 1))) - ic_y)
-
+            # the loss consists of the equation and initial conditions
             return tf.math.reduce_mean(tf.square(eq)) + ic
 
         return ann_loss_function
@@ -170,31 +168,23 @@ class DE:
 # initializing the DEs and storing them in a list
 equations = []
 
+
+# ########################   linear DEs   #####################
+# # ---------------------   first order   ---------------------
 test_de = DE(name="test_de", input_min=-2., input_max=2., eq=lambda df_dx, f, x: df_dx + 2. * x * f, order=1, ic_x=[0],
              ic_y=[1], solution=lambda x: tf.exp(-x ** 2))
 equations.append(test_de)
 
-# # Solution missing for this test
-# R = 1.
-# test_de1 = DE(input_min=0., input_max=1., eq=lambda df_dx, f, x: df_dx - R * x * (1 - x), order=1, ic_x=0, ic_y=1, solution=lambda x: None)
-# equations.append(test_de1)
 
-
-# ########################   linear DEs   #####################
-# # ---------------------   first order   ---------------------
-
-# solution might be wrong
 a = 1.
 b = 1.
 gompertz = DE(name="gompertz", input_min=-2., input_max=2.,
               eq=lambda df_dx, f, x: f * (a - b * tf.math.log(f)),
               order=1, ic_x=[0.], ic_y=[np.e],
               solution=lambda x: tf.exp(1.))
-# equations.append(gompertz)
+equations.append(gompertz)
 
 # Kirchhoff's law
-# dürfte keinen Sinn ergeben, da zwei verschränkte Gleichungen verwendet werden: E(t) & I(t)
-# pürfen, ob Ergebnis plausibel
 L = 4
 R = 12
 E_t = 60
@@ -205,8 +195,6 @@ kirchhoff = DE(name="kirchhoff", input_min=-0.5, input_max=0.5,
 equations.append(kirchhoff)
 
 # Newtons first Law of cooling
-# auch hier sind zu viele Bedingungen zu erfüllen
-# richtige Lösung wird nicht angezeigt
 k = 0.092
 M = 25
 C = 4.36
@@ -228,17 +216,8 @@ newtons_second_law = DE(name="newtons_second_law", input_min=-2., input_max=2.,
 equations.append(newtons_second_law)
 
 # x^2y′′+3xy′+4y=0
-# Defintionslücke bei y(0)
 c_1 = 5
 c_2 = 3
-# test case just to see what the NN comes up with for y(0) which is not defined
-second_order_euler_test = DE(name="second_order_euler_test", input_min=-2., input_max=2.,
-                             eq=lambda dy_dx, dy_dxx, y, x: tf.math.pow(x, 2) * dy_dxx + 3 * x * dy_dx + 4 * y,
-                             order=2, ic_x=[1, 2.476632271], ic_y=[5, 0.4037741136],
-                             solution=lambda x: c_1 * (1. / x) * tf.math.cos(tf.sqrt(3.) * tf.math.log(x)) + c_2 * (
-                                     1. / x) * tf.math.sin(tf.sqrt(3.) * tf.math.log(x)))
-equations.append(second_order_euler_test)
-
 second_order_euler = DE(name="second_order_euler", input_min=2., input_max=6.,
                         eq=lambda dy_dx, dy_dxx, y, x: tf.math.pow(x, 2) * dy_dxx + 3 * x * dy_dx + 4 * y,
                         order=2, ic_x=[1, 2.476632271], ic_y=[5, 0.4037741136],
@@ -258,7 +237,6 @@ second_2 = DE(name="second_2", input_min=-2., input_max=2.,
               solution=lambda t: tf.cos(t) + tf.sin(t))
 equations.append(second_2)
 
-# TODO add ics, check solution
 # 2t²y'' + 3ty' − y = 0
 new_2nd_linear_1 = DE(name="new_2nd_linear_1", input_min=1., input_max=5.,
                       eq=lambda df_dx, df_dxx, f, x: 2 * (x ** 2) * df_dxx + 3 * x * df_dx - f,
@@ -281,7 +259,6 @@ new_2nd_linear_3 = DE(name="new_2nd_linear_3", input_min=-2., input_max=2.,
 equations.append(new_2nd_linear_3)
 
 # # ------------------   third order ---------------------------
-
 
 # third_order, y''' - 9y'' + 15y' + 25y = 0
 third_order = DE(name="third_order", input_min=0., input_max=1.,
@@ -327,7 +304,6 @@ equations.append(nonlinear)
 
 # # ------------------------   second order   ------------------------------------
 
-# TODO add solution
 # Painlevé II transcendent: w'' = 2w^3 + zw + α
 alpha = 3.
 painleve_2_transcendent = DE(name="painleve_2_transcendent", input_min=-2., input_max=2.,
@@ -342,7 +318,6 @@ second_order_nonlinear = DE(name="second_order_nonlinear", input_min=-2., input_
                             solution=lambda x: 0.5 * (tf.math.log(tf.abs(x - 1.)) - tf.math.log(tf.abs(x + 1.))) + 2.)
 equations.append(second_order_nonlinear)
 
-# TODO: check ic
 mu = 1.
 van_der_pol = DE(name="van_der_pol", input_min=0., input_max=2,
                  eq=lambda dfdt, dfdtt, x, t: dfdtt - mu * (1 - x ** 2) * dfdt + x,
@@ -355,6 +330,7 @@ new_2nd_nonlinear_1 = DE(name="new_2nd_nonlinear_1", input_min=0., input_max=2,
                          eq=lambda dfdt, dfdtt, f, t: dfdtt + 3 * (f ** 2) * dfdt,
                          order=2, ic_x=[1.], ic_y=[2.],
                          solution=lambda x: x + 1)
+equations.append(new_2nd_nonlinear_1)
 
 # y''/y'² + y'(e^y) = 0 for y(0) = 0, y'(0) = 1
 new_2nd_nonlinear_2 = DE(name="new_2nd_nonlinear_2", input_min=0., input_max=2,
@@ -366,7 +342,6 @@ equations.append(new_2nd_nonlinear_2)
 # # ------------------------   third order   -----------------------------------
 
 # third_order_nonlin, y′′′+(y′)^2−yy′′=0
-# x undefiniert, könnte zu Probemen führen. sind aber atsächlich  gleicvhverteielte x-Werte
 third_order_nonlin = DE(name="third_order_nonlin", input_min=0., input_max=1.,
                         eq=lambda dy_dt, dy_dtt, dy_dttt, y, x: dy_dttt + tf.math.pow(dy_dt, 2) - y * dy_dtt,
                         order=3, ic_x=[0, 1, 2], ic_y=[1, 2.08616127, 6.524391382],
@@ -391,15 +366,15 @@ equations.append(third_order_v2)
 # ----------------------------------------------------------------------------------------------------------------------
 
 # set the hyperparameters
-epochs = 200
+epochs = 200  # number of epochs for each run
 learning_rate = 0.01
-loss_threshold = 0.01
+loss_threshold = 0.00001  # threshold for which time and epochs until the loss is lower than this is recorded
 num_runs = 2  # number of consecutive runs to calculate metrics over time measurements
+input_size = 400  # number of input values over which the ANN approximates the solution of the DEs
+seed = 42  # seed for initializing the ANN weights and biases to keep the results the same for all runs
 
-# WORKING DIRECTORY #
-# Define path where model and output files will be stored.
-# The user is responsible for cleaning up this temporary directory.
-top_path = os.path.abspath(os.path.join(os.getcwd(), 'temp', str(time.time())))
+# define path where output files will be stored
+top_path = os.path.abspath(os.path.join(os.getcwd(), 'data', str(time.time())))
 os.makedirs(top_path)
 
 if num_runs <= 1:
@@ -408,6 +383,13 @@ if num_runs <= 1:
     # use the already created directory
     path_wd = top_path
 
+# save the hyperparameters
+hyperparameters = [("epochs", epochs), ("learning_rate", learning_rate), ("loss_threshold", loss_threshold),
+                   ("num_runs", num_runs), ("input_size", input_size), ("seed", seed)]
+hyperparameters = np.array(hyperparameters)
+np.savetxt(os.path.join(top_path, "hyperparameters.txt"), hyperparameters, fmt="%s", delimiter=",")
+
+# create list for storing results of all runs
 list_of_run_metrics = []
 
 for run_num in range(num_runs):
@@ -415,6 +397,7 @@ for run_num in range(num_runs):
         # create subdirectory for each run
         path_wd = os.path.abspath(os.path.join(top_path, str(run_num)))
         os.makedirs(path_wd)
+        print("____________________ starting run ", run_num, "____________________________")
 
     # lists for storing results
     final_losses = []
@@ -426,9 +409,6 @@ for run_num in range(num_runs):
     total_training_time = []
 
     functions_dict = {}
-
-    input_size = 400
-    seed = 42
 
     # create directory for the plots
     try:
@@ -451,34 +431,25 @@ for run_num in range(num_runs):
         # directory already exists
         pass
 
-    # save the hyperparameters
-    hyperparameters = []
-    hyperparameters.append(("epochs", epochs))
-    hyperparameters.append(("learning_rate", learning_rate))
-    hyperparameters.append(("loss_threshold", loss_threshold))
-    hyperparameters.append(("input_size", input_size))
-    hyperparameters.append(("seed", seed))
-    hyperparameters = np.array(hyperparameters)
-    np.savetxt(os.path.join(path_wd, "hyperparameters.txt"), hyperparameters, fmt="%s", delimiter=",")
-
     # create RMSE function object for later use
     rmse = tf.keras.metrics.RootMeanSquaredError()
 
-    # run the training and conversion for all DEs
+    # run the training for all DEs
     for i, de in enumerate(equations):
         print("\n\nWorking on " + de.name + ", equation", i, "of", len(equations) - 1)
-        # save the loss function in the dict
-        functions_dict[de.name] = de.get_loss_function()
 
         # get the loss function and inputs from the DE object
         loss_function = de.get_loss_function()
         x = de.get_inputs(input_size)
 
+        # save the loss function in the dict
+        functions_dict[de.name] = de.get_loss_function()
+
         # Save dataset so SNN toolbox can find it.
         np.savez_compressed(os.path.join(path_wd, 'x_test'), x)
         np.savez_compressed(os.path.join(path_wd, 'y_test'), x)
 
-        # initialize the model and optimizer
+        # initialize the model
         ns = 10
         model = tf.keras.Sequential([tf.keras.layers.Dense(units=ns, activation=tf.nn.silu,
                                                            kernel_initializer=tf.random_normal_initializer(seed=seed),
@@ -508,8 +479,8 @@ for run_num in range(num_runs):
                 except:  # some layers don't have any activation
                     pass
 
+        # initialize the optimizer, compile the model and print a summary
         optimizer = tf.keras.optimizers.Adam(learning_rate)
-
         model.compile(optimizer, test_de.get_loss_function())
         print(model.summary())
 
@@ -519,6 +490,7 @@ for run_num in range(num_runs):
 
         under_threshold = False
 
+        # get the start time for recording time metrics
         start_time = time.process_time()
 
         # We train for epochs.
@@ -540,6 +512,7 @@ for run_num in range(num_runs):
                 error = rmse(approx, solution).numpy()
                 train_errors.append(error)
             except ValueError:
+                # solution is None, do nothing
                 pass
 
             # check if loss is under threshold
@@ -548,16 +521,18 @@ for run_num in range(num_runs):
                 first_epoch_under_threshold.append(epoch)
                 under_threshold = True
 
-        # store total runtime and None for time to threshold if it was not reached (to have equal sized lists for all DEs)
+        # store total runtime and time to threshold
+        # use None if it was not reached to have equal sized lists for all DEs
         total_training_time.append(time.process_time() - start_time)
         if not under_threshold:
             time_to_threshold.append(None)
             first_epoch_under_threshold.append(None)
 
-        # save final loss + error
+        # save final loss, final error (if it exists), and de name
         if train_errors:
             final_errors.append(train_errors[-1])
         else:
+            # no train errors due to missing solution, store None instead
             final_errors.append(None)
         final_losses.append(train_losses[-1])
         de_names.append(de.name)
@@ -566,34 +541,29 @@ for run_num in range(num_runs):
         model_name = de.name
         model.save(os.path.join(path_wd, model_name))
 
-        # save train loss and train error to file for later evaulation
+        # save train loss and train error to file for later evaluation
         np.savetxt(os.path.join(path_wd, "train_losses", model_name + "-train_losses.txt"), np.array(train_losses),
                    fmt="%s", delimiter=",")
         np.savetxt(os.path.join(path_wd, "train_errors", model_name + "-train_errors.txt"), np.array(train_errors),
                    fmt="%s", delimiter=",")
 
-        # plot result
+        # plot training losses and errors
         plt.figure()
         plt.plot(train_losses)
-        # if train_errors:
-        #     plt.plot(train_errors, label="RMSE")
         plt.xlabel("Training steps")
         plt.ylabel("Loss")
         plt.title(de.name)
-
         figname = de.name + "__loss.png"
         plt.savefig(os.path.join(path_wd, "plots", figname))
         plt.show(block=False)
         plt.pause(0.001)
 
-        # plot result
         if train_errors:
             plt.figure()
             plt.plot(train_errors)
             plt.xlabel("Training steps")
             plt.ylabel("RMSE")
             plt.title(de.name)
-
             figname = de.name + "__error.png"
             plt.savefig(os.path.join(path_wd, "plots", figname))
             plt.show(block=False)
@@ -606,6 +576,7 @@ for run_num in range(num_runs):
             plt.plot(tf.squeeze(x), tf.squeeze(de.analytical_solution(tf.squeeze(x))), label="true solution",
                      linestyle="dashed")
         except ValueError:
+            # no solution, do nothing -> only plot model's approximation
             pass
         plt.legend()
         plt.title(de.name)
@@ -615,14 +586,14 @@ for run_num in range(num_runs):
         plt.show(block=False)
         plt.pause(0.001)
 
-        # print and store the dictionary with the loss functions
-        print("dictionary:", functions_dict)
+        # store the dictionary with the loss functions
+        print("functions dict", functions_dict)
         dict_file_name = 'serialized_custom_loss_functions.txt'
         f = open(os.path.join(path_wd, dict_file_name), 'wb')  # opened the file in write and binary mode
-        pickle.dump(functions_dict, f)  # dumping the content in the variable 'content' into the file
+        pickle.dump(functions_dict, f)  # dumping the content into the file
         f.close()  # closing the file
 
-    # create an array with all final losses + errors and de names
+    # create an array with all collected data
     final_losses = np.array(final_losses)
     final_errors = np.array(final_errors)
     de_names = np.array(de_names)
@@ -633,15 +604,14 @@ for run_num in range(num_runs):
     metrics = np.array(
         [de_names, final_losses, final_errors, first_epoch_under_threshold, time_to_threshold, total_training_time]).T
 
+    # append the data of the current run to the list of results for all runs
     list_of_run_metrics.append(metrics)
 
     # save metrics as file
     np.savetxt(os.path.join(path_wd, "metrics.txt"), metrics, fmt="%s", delimiter=",",
-               header="de_names, final_losses, final_errors, first_epoch_under_threshold, time_to_threshold, "
+               header="de_names,final_losses,final_errors,first_epoch_under_threshold,time_to_threshold,"
                       "total_training_time")
 
-    # show all plots in the end when running as script
-    plt.show()
 
 # calculate time metrics for all runs
 
@@ -767,3 +737,6 @@ figname = "Max_time_to_threshold.png"
 plt.savefig(os.path.join(top_path, "plots", figname))
 plt.show(block=False)
 plt.pause(0.001)
+
+# show all plots in the end when running as script
+plt.show()

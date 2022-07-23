@@ -1,4 +1,0 @@
-<function sigmoid at 0x7f76c968eca0>
-<function sigmoid at 0x7f76c968eca0>
-<function sigmoid at 0x7f76c968eca0>
-<function linear at 0x7f769d8888b0>

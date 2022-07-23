@@ -1,4 +1,0 @@
-<function sigmoid at 0x7f9c1ceb6ca0>
-<function sigmoid at 0x7f9c1ceb6ca0>
-<function sigmoid at 0x7f9c1ceb6ca0>
-<function relu at 0x7f9c1cf8c3a0>

@@ -2,46 +2,10 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
+from pretty_plots import pretty_plot_settings
 
-sns.set(font='Franklin Gothic Book',
-        rc={
-            'axes.axisbelow': False,
-            'axes.edgecolor': 'lightgrey',
-            'axes.facecolor': 'None',
-            'axes.grid': False,
-            'axes.labelcolor': 'dimgrey',
-            'axes.spines.right': False,
-            'axes.spines.top': False,
-            'figure.facecolor': 'white',
-            'lines.solid_capstyle': 'round',
-            'patch.edgecolor': 'w',
-            'patch.force_edgecolor': True,
-            'text.color': 'dimgrey',
-            'xtick.bottom': False,
-            'xtick.color': 'dimgrey',
-            'xtick.direction': 'out',
-            'xtick.top': False,
-            'ytick.color': 'dimgrey',
-            'ytick.direction': 'out',
-            'ytick.left': False,
-            'ytick.right': False,
-            'figure.autolayout': True})
-
-sns.set_context("notebook", rc={"font.size": 16,
-                                "axes.titlesize": 20,
-                                "axes.labelsize": 16})
-
-# for prettier plots
-CB91_Blue = '#2CBDFE'
-CB91_Green = '#47DBCD'
-CB91_Pink = '#F3A0F2'
-CB91_Purple = '#9D2EC5'
-CB91_Violet = '#661D98'
-CB91_Amber = '#F5B14C'
-color_list = [CB91_Blue, CB91_Pink, CB91_Green, CB91_Amber,
-              CB91_Purple, CB91_Violet]
-plt.rcParams['axes.prop_cycle'] = plt.cycler(color=color_list)
+# make plots look better
+pretty_plot_settings()
 
 # define categories:
 linear = ["test_de", "gompertz", "kirchhoff", "newtons_first", "newtons_second_law", "second_order_euler_test",
@@ -59,11 +23,9 @@ third_order = ["third_order", "third_order_2", "third_order_3", "third_order_non
 # All metrics except time:
 # import data from one run - metrics.txt, (train_errors folder, train_losses folder)
 
-path = os.path.join(os.getcwd(), "temp", "1657861020.4330547")
+path = os.path.join(os.getcwd(), "data", "1657861020.4330547")
 metrics_path = os.path.join(path, "0", "metrics.txt")
-# print(metrics_path)
 metrics = np.loadtxt(metrics_path, delimiter=",", dtype=str)
-# print(metrics)
 de_names = metrics[:, 0]
 
 is_linear = lambda x: 1 if x in linear else 0
@@ -78,13 +40,10 @@ def get_order(x):
         return 3
     return -1
 
-# print([is_linear(x) for x in de_names])
+
 # add category columns
 metrics = np.insert(metrics, metrics.shape[1], values=[is_linear(x) for x in de_names], axis=1)
 metrics = np.insert(metrics, metrics.shape[1], values=[get_order(x) for x in de_names], axis=1)
-
-# print("metrics", metrics)
-
 
 # columns:
 # de_names, final_losses, final_errors, first_epoch_under_threshold, time_to_threshold, total_training_time, is_linear, order
@@ -93,8 +52,6 @@ metrics[["final_losses", "final_errors", "first_epoch_under_threshold", "time_to
 metrics["de_names"] = metrics["de_names"].astype(str)
 metrics["is_linear"] = metrics["is_linear"].astype(bool)
 
-
-# metrics.infer_objects()
 
 print(metrics)
 print(metrics.dtypes)

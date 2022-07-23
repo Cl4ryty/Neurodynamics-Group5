@@ -1,5 +1,0 @@
-epochs,10000
-learning_rate,0.01
-loss_threshold,1e-05
-input_size,400
-seed,142

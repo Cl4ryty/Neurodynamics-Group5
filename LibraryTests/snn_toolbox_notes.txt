@@ -1,6 +1,0 @@
-SNN toolbox:
-- requires the model to be in a class named Model
-- model needs to have an input_shaped stored (as an iterable variable)
-- save the model weights in the same file the model is defined (due to how pytorch saves it the this is the only way it can find the class again)
-- script and saved model need to have the same name (excluding the file extension)
-- example model at ~/anaconda3/envs/pinnTesting/lib/python3.9/site-packages/tests/parsing/models/pytorch.py
