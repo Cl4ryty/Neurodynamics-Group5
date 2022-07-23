@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 # path to the data
-path = os.path.join(os.getcwd(), "data", "1657861020.4330547")
+path = os.path.join(os.getcwd(), "..", "data", "1657861020.4330547")
 
 # define categories:
 linear = ["test_de", "gompertz", "kirchhoff", "newtons_first", "newtons_second_law", "second_order_euler_test",
@@ -55,5 +55,5 @@ time_metrics["is_linear"] = time_metrics["is_linear"].astype(bool)
 
 print(time_metrics)
 # save as csv for analysis / further plotting
-time_metrics.to_csv("Analysis/time_metrics.csv")
+time_metrics.to_csv(os.path.join("..", "Analysis", "time_metrics.csv"))
 

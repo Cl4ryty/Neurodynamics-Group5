@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import dill as pickle
 import os
 import time
-from pretty_plots import pretty_plot_settings
+from utils.pretty_plots import pretty_plot_settings
 
 # make plots look better
 pretty_plot_settings()
