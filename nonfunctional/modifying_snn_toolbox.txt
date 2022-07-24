@@ -1,0 +1,50 @@
+File "/home/hannah/anaconda3/envs/converting/lib/python3.9/site-packages/snntoolbox/bin/utils.py", line 392, in update_setup
+    assert os.path.isfile(h5_filepath), \
+AssertionError: File /home/hannah/Documents/A0_uni/S6/Neurodynamics/Neurodynamics-Group5/temp/1657821641.3202584/0/test_de.h5 not found.
+
+
+-> comment out the assertion
+
+
+File "/home/hannah/anaconda3/envs/converting/lib/python3.9/site-packages/snntoolbox/bin/utils.py", line 72, in run_pipeline
+    input_model = model_lib.load(config.get('paths', 'path_wd'),
+  File "/home/hannah/anaconda3/envs/converting/lib/python3.9/site-packages/snntoolbox/parsing/model_libs/keras_input_lib.py", line 182, in load
+    model = models.load_model(filepath, custom_dicts)
+  File "/home/hannah/anaconda3/envs/converting/lib/python3.9/site-packages/keras/utils/traceback_utils.py", line 67, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "/home/hannah/anaconda3/envs/converting/lib/python3.9/site-packages/keras/utils/generic_utils.py", line 709, in deserialize_keras_object
+    raise ValueError(
+ValueError: Unknown loss function: ann_loss_function. Please ensure this object is passed to the `custom_objects` argument. See https://www.tensorflow.org/guide/keras/save_and_serialize#registering_the_custom_object for details.
+
+
+-> replace the lins:
+
+model = models.load_model(filepath, custom_dicts)
+
+with:
+
+# get the dictionary containing the custom loss functions
+dict_file_name = 'serialized_custom_loss_functions.txt'
+f = open(str(os.path.join(path, dict_file_name)), 'rb')
+reconstructed_dict = pickle.load(f)
+f.close()  # closing the file
+
+model = models.load_model(filepath, custom_objects={"ann_loss_function": reconstructed_dict[filename]})
+
+
+AND add "import dill as pickle" to the imports in that file
+
+
+
+
+  File "/home/hannah/anaconda3/envs/converting/lib/python3.9/site-packages/snntoolbox/simulation/target_simulators/spiNNaker_target_sim.py", line 96, in add_layer
+    np.asscalar(np.prod(layer.output_shape[1:], dtype=np.int)),
+  File "/home/hannah/anaconda3/envs/converting/lib/python3.9/site-packages/numpy/__init__.py", line 311, in __getattr__
+    raise AttributeError("module {!r} has no attribute "
+AttributeError: module 'numpy' has no attribute 'asscalar'
+
+-> replace
+np.asscalar(np.prod(layer.output_shape[1:], dtype=np.int)),
+
+with
+np.prod(layer.output_shape[1:], dtype=np.int).item(),
