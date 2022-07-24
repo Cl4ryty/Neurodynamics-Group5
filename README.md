@@ -3,7 +3,7 @@ TODO: short project description, link to paper in repo.
 For further information, please refer to our [paper](../blob/master/paper).
 
 ## Repository structure
-- `Analysis/` contains contains csv files of some of the processed data as well as an Rmd notebook to generate the plots used in the paper and calculate some statistics
+- `Analysis/` contains contains csv files of some of the processed data as well as an Rmd (R Markdown) notebook to generate the plots used in the paper and calculate some statistics (this requires R as well as the tidyverse library to be installed to be run)
 - `utils/` contains some utility scripts, notably `save_for_analysis.py` which can be used to save the data collected during the ANN training as a csv file – [time_metrics.csv in Analysis](../main/Analysis/time_metrics.csv) – to be more easily used for analysis
 - `run_ann_training.py` contains the code to train the ANN, and store the results
 - results are in `data/`, each timestamped subfolder is one complete training run, which contains
