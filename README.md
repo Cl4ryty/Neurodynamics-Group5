@@ -3,7 +3,7 @@ Neural networks (NNs) have been shown (Hornik, 1991) to be able to approximate f
 
 This code contained in this repository can be used to train ANNs to solve DEs using TensorFlow. It compares training time and final losses of ANNs when used to solve DEs of different order and different linearity. [The code to convert the trained ANNs into SNNs with SNN toolbox and run them on SpiNNaker is still nonfunctional](https://github.com/Cl4ryty/spinnaker_test).
 
-For further information about the scientific background as well as an analysis of our results, please refer to our [paper](../blob/master/paper).
+For further information about the scientific background as well as an analysis of our results, please refer to our [paper](../main/Paper.pdf).
 
 ## Repository structure
 - `Analysis/` contains contains csv files of some of the processed data as well as an Rmd (R Markdown) notebook to generate the plots used in the paper and calculate some statistics (this requires R as well as the tidyverse library to be installed to be run)
