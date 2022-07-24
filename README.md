@@ -26,7 +26,7 @@ For further information about the scientific background as well as an analysis o
 - Install conda (e.g. https://www.anaconda.com/) if you don't have already
 
 ### Running the ANN training:
-  - use the [colab notebook](https://colab.research.google.com/drive/1NwvXcDmwGfrzuEHoj2G883BXYrahjgft?usp=sharing)
+  - use the [colab notebook](https://colab.research.google.com/github/Cl4ryty/Neurodynamics-Group5/blob/main/Run_ANN_training.ipynb)
   - run it locally:
     - create a new environment with and already install pip by running `conda create -n env_name pip`, substituting env_name with a name of your liking
     - activate the environment `conda activate env_name`
