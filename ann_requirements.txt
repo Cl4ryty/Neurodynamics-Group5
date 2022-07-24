@@ -2,7 +2,6 @@ absl-py==1.1.0
 astunparse==1.6.3
 box2d-py==2.3.5
 cachetools==5.2.0
-certifi @ file:///opt/conda/conda-bld/certifi_1655968806487/work/certifi
 charset-normalizer==2.1.0
 cloudpickle==2.1.0
 cycler==0.11.0
