@@ -1,6 +1,9 @@
-# Paper Title
-TODO: short project description, link to paper in repo.
-For further information, please refer to our [paper](../blob/master/paper).
+# An attempt to use SNNs instead of ANNs to solve differential equations
+Neural networks (NNs) have been shown (Hornik, 1991) to be able to approximate functions. In particular, Physics-Informed Neural Networks (PINNs) are used to efficiently solve partial differential equations (PDEs) non-numerically (Kharazmi et al., 2019). Although Artificial Neural Networks (ANNs) have enabled groundbreaking advances, they rely on biologically inaccurate neuron models, and training is associated with high energy consumption (Kundu et al., 2021). Spiking Neural Networks (SNNs) promise to solve these issues, because they use more biologically plausible models of neurons (Li & Furber, 2021). SNNs utilize spikes, which are discrete events that occur at distinct time points, as opposed to continuous values. Theoretically, SNNs should also be able to solve differential equations (DEs) according to similar principles as used by ANNs (Tavanaei et al., 2019), since they can be converted into each other. Nevertheless, the ability to solve DEs with SNNs has rarely been investigated. Therefore, the research objective is to investigate whether and to what extent the said DEs can be solved with SNNs instead of ANNs. First, we will train ANNs using TensorFlow, and convert them into SNNs with SNN toolbox (Rueckauer et al., 2017). After the conversion, we planned to compare the differences of root-mean-square deviation (RMSD) between ANNs and SNNs. Additionally, we will compare performance of ANN when used to solve DEs of different order and different linearity.
+
+This code contained in this repository can be used to train ANNs to solve DEs using TensorFlow. It compares training time and final losses of ANNs when used to solve DEs of different order and different linearity. [The code to convert the trained ANNs into SNNs with SNN toolbox and run them on SpiNNaker is still nonfunctional](https://github.com/Cl4ryty/spinnaker_test).
+
+For further information about the scientific background as well as an analysis of our results, please refer to our [paper](../blob/master/paper).
 
 ## Repository structure
 - `Analysis/` contains contains csv files of some of the processed data as well as an Rmd (R Markdown) notebook to generate the plots used in the paper and calculate some statistics (this requires R as well as the tidyverse library to be installed to be run)
