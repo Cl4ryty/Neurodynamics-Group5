@@ -103,6 +103,7 @@ ggplot(d) +
         plot.title = element_text(hjust = 0.5, size = 18, face = "bold", margin = margin(10,0,15,0)),
         plot.margin = margin(0,0,40,0))+
   scale_x_discrete(labels = c("linear", "nonlinear"))
+ggsave("finallosses.pdf",dpi=1000)
 
 
 
@@ -119,6 +120,7 @@ ggplot(d)+
         plot.title = element_text(hjust = 0.5, size = 18, face = "bold", margin = margin(10,0,15,0)),
         plot.margin = margin(0,0,40,0),
         axis.text.x = element_text(angle=90))
+ggsave("individualfinallosses.pdf",dpi=1000)
 
 
 
@@ -142,6 +144,7 @@ ggplot(td) +
         plot.title = element_text(hjust = 0.5, size = 18, face = "bold", margin = margin(10,0,15,0)),
         plot.margin = margin(0,0,40,0))+
   scale_x_discrete(labels = c("linear", "nonlinear"))
+ggsave("trainingtimes.pdf",dpi=1000)
 
 ggplot(td)+
   geom_col(aes(x=de_names, y=total_training_time, fill=order), position=position_dodge())+
@@ -156,6 +159,7 @@ ggplot(td)+
         plot.title = element_text(hjust = 0.5, size = 18, face = "bold", margin = margin(10,0,15,0)),
         plot.margin = margin(0,0,40,0),
         axis.text.x = element_text(angle=90))
+ggsave("individualtrainingtimes.pdf",dpi=1000)
   
   
 ```

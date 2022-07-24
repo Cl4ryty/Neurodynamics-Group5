@@ -3,8 +3,7 @@ import seaborn as sns
 
 
 def pretty_plot_settings():
-    sns.set(font='Franklin Gothic Book',
-            rc={
+    sns.set(rc={
                 'axes.axisbelow': False,
                 'axes.edgecolor': 'lightgrey',
                 'axes.facecolor': 'None',
@@ -25,7 +24,7 @@ def pretty_plot_settings():
                 'ytick.direction': 'out',
                 'ytick.left': False,
                 'ytick.right': False,
-                'figure.autolayout': True})
+                'figure.autolayout': True})s
 
     sns.set_context("notebook", rc={"font.size": 16,
                                     "axes.titlesize": 20,

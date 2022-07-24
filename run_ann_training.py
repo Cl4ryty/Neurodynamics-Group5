@@ -587,7 +587,6 @@ for run_num in range(num_runs):
         plt.pause(0.001)
 
         # store the dictionary with the loss functions
-        print("functions dict", functions_dict)
         dict_file_name = 'serialized_custom_loss_functions.txt'
         f = open(os.path.join(path_wd, dict_file_name), 'wb')  # opened the file in write and binary mode
         pickle.dump(functions_dict, f)  # dumping the content into the file
@@ -612,131 +611,131 @@ for run_num in range(num_runs):
                header="de_names,final_losses,final_errors,first_epoch_under_threshold,time_to_threshold,"
                       "total_training_time")
 
+if num_runs > 1:
+    # calculate time metrics for all runs
 
-# calculate time metrics for all runs
+    # stack the metrics arrays of all runs
+    time_metrics = np.stack(list_of_run_metrics)
 
-# stack the metrics arrays of all runs
-time_metrics = np.stack(list_of_run_metrics)
+    # save array for later use
+    np.save(os.path.join(top_path, "run_metrics"), time_metrics)
 
-# save array for later use
-np.save(os.path.join(top_path, "run_metrics"), time_metrics)
+    # get only the time metrics
+    time_metrics = np.array(time_metrics[:, :, -2:], dtype=float)
 
-# get only the time metrics
-time_metrics = np.array(time_metrics[:, :, -2:], dtype=float)
+    means = np.mean(time_metrics, axis=0)
+    medians = np.median(time_metrics, axis=0)
+    mins = np.min(time_metrics, axis=0)
+    maxs = np.max(time_metrics, axis=0)
 
-means = np.mean(time_metrics, axis=0)
-medians = np.median(time_metrics, axis=0)
-mins = np.min(time_metrics, axis=0)
-maxs = np.max(time_metrics, axis=0)
+    # create directory for the plots
+    try:
+        os.makedirs(os.path.join(top_path, "plots"))
+    except FileExistsError:
+        # directory already exists
+        pass
 
-# create directory for the plots
-try:
-    os.makedirs(os.path.join(top_path, "plots"))
-except FileExistsError:
-    # directory already exists
-    pass
+    # plots for total training times
+    plt.figure(figsize=(15, 8))
+    plt.boxplot(time_metrics[:, :, 1].T.tolist(), labels=de_names)
+    plt.ylabel("Total training time")
+    plt.xlabel("DEs")
+    plt.xticks(rotation=30, ha='right')
+    figname = "Total_training_times.png"
+    plt.savefig(os.path.join(top_path, "plots", figname))
+    plt.show(block=False)
+    plt.pause(0.001)
 
-# plots for total training times
-plt.figure(figsize=(15, 8))
-plt.boxplot(time_metrics[:, :, 1].T.tolist(), labels=de_names)
-plt.ylabel("Total training time")
-plt.xlabel("DEs")
-plt.xticks(rotation=30, ha='right')
-figname = "Total_training_times.png"
-plt.savefig(os.path.join(top_path, "plots", figname))
-plt.show(block=False)
-plt.pause(0.001)
+    plt.figure(figsize=(15, 8))
+    plt.bar(de_names, means[:, 1])
+    plt.ylabel("Mean total training time")
+    plt.xlabel("DEs")
+    plt.xticks(rotation=30, ha='right')
+    figname = "Mean_total_training_times.png"
+    plt.savefig(os.path.join(top_path, "plots", figname))
+    plt.show(block=False)
+    plt.pause(0.001)
 
-plt.figure(figsize=(15, 8))
-plt.bar(de_names, means[:, 1])
-plt.ylabel("Mean total training time")
-plt.xlabel("DEs")
-plt.xticks(rotation=30, ha='right')
-figname = "Mean_total_training_times.png"
-plt.savefig(os.path.join(top_path, "plots", figname))
-plt.show(block=False)
-plt.pause(0.001)
+    plt.figure(figsize=(15, 8))
+    plt.bar(de_names, medians[:, 1])
+    plt.ylabel("Median total training time")
+    plt.xlabel("DEs")
+    plt.xticks(rotation=30, ha='right')
+    figname = "Median_total_training_times.png"
+    plt.savefig(os.path.join(top_path, "plots", figname))
+    plt.show(block=False)
+    plt.pause(0.001)
 
-plt.figure(figsize=(15, 8))
-plt.bar(de_names, medians[:, 1])
-plt.ylabel("Median total training time")
-plt.xlabel("DEs")
-plt.xticks(rotation=30, ha='right')
-figname = "Median_total_training_times.png"
-plt.savefig(os.path.join(top_path, "plots", figname))
-plt.show(block=False)
-plt.pause(0.001)
+    plt.figure(figsize=(15, 8))
+    plt.bar(de_names, mins[:, 1])
+    plt.ylabel("Min total training time")
+    plt.xlabel("DEs")
+    plt.xticks(rotation=30, ha='right')
+    figname = "Min_total_training_times.png"
+    plt.savefig(os.path.join(top_path, "plots", figname))
+    plt.show(block=False)
+    plt.pause(0.001)
 
-plt.figure(figsize=(15, 8))
-plt.bar(de_names, mins[:, 1])
-plt.ylabel("Min total training time")
-plt.xlabel("DEs")
-plt.xticks(rotation=30, ha='right')
-figname = "Min_total_training_times.png"
-plt.savefig(os.path.join(top_path, "plots", figname))
-plt.show(block=False)
-plt.pause(0.001)
+    plt.figure(figsize=(15, 8))
+    plt.bar(de_names, maxs[:, 1])
+    plt.ylabel("Max total training time")
+    plt.xlabel("DEs")
+    plt.xticks(rotation=30, ha='right')
+    figname = "Max_total_training_times.png"
+    plt.savefig(os.path.join(top_path, "plots", figname))
+    plt.show(block=False)
+    plt.pause(0.001)
 
-plt.figure(figsize=(15, 8))
-plt.bar(de_names, maxs[:, 1])
-plt.ylabel("Max total training time")
-plt.xlabel("DEs")
-plt.xticks(rotation=30, ha='right')
-figname = "Max_total_training_times.png"
-plt.savefig(os.path.join(top_path, "plots", figname))
-plt.show(block=False)
-plt.pause(0.001)
+    # plots for times to loss under threshold
+    plt.figure(figsize=(15, 8))
+    plt.boxplot(time_metrics[:, :, 0].T.tolist(), labels=de_names)
+    plt.ylabel("Times to threshold")
+    plt.xlabel("DEs")
+    plt.xticks(rotation=30, ha='right')
+    figname = "Times_to_threshold.png"
+    plt.savefig(os.path.join(top_path, "plots", figname))
+    plt.show(block=False)
+    plt.pause(0.001)
 
-# plots for times to loss under threshold
-plt.figure(figsize=(15, 8))
-plt.boxplot(time_metrics[:, :, 0].T.tolist(), labels=de_names)
-plt.ylabel("Times to threshold")
-plt.xlabel("DEs")
-plt.xticks(rotation=30, ha='right')
-figname = "Times_to_threshold.png"
-plt.savefig(os.path.join(top_path, "plots", figname))
-plt.show(block=False)
-plt.pause(0.001)
+    plt.figure(figsize=(15, 8))
+    plt.bar(de_names, means[:, 0])
+    plt.ylabel("Mean time to threshold")
+    plt.xlabel("DEs")
+    plt.xticks(rotation=30, ha='right')
+    figname = "Mean_time_to_threshold.png"
+    plt.savefig(os.path.join(top_path, "plots", figname))
+    plt.show(block=False)
+    plt.pause(0.001)
 
-plt.figure(figsize=(15, 8))
-plt.bar(de_names, means[:, 0])
-plt.ylabel("Mean time to threshold")
-plt.xlabel("DEs")
-plt.xticks(rotation=30, ha='right')
-figname = "Mean_time_to_threshold.png"
-plt.savefig(os.path.join(top_path, "plots", figname))
-plt.show(block=False)
-plt.pause(0.001)
+    plt.figure(figsize=(15, 8))
+    plt.bar(de_names, medians[:, 0])
+    plt.ylabel("Median time to threshold")
+    plt.xlabel("DEs")
+    plt.xticks(rotation=30, ha='right')
+    figname = "Median_time_to_threshold.png"
+    plt.savefig(os.path.join(top_path, "plots", figname))
+    plt.show(block=False)
+    plt.pause(0.001)
 
-plt.figure(figsize=(15, 8))
-plt.bar(de_names, medians[:, 0])
-plt.ylabel("Median time to threshold")
-plt.xlabel("DEs")
-plt.xticks(rotation=30, ha='right')
-figname = "Median_time_to_threshold.png"
-plt.savefig(os.path.join(top_path, "plots", figname))
-plt.show(block=False)
-plt.pause(0.001)
+    plt.figure(figsize=(15, 8))
+    plt.bar(de_names, mins[:, 0])
+    plt.ylabel("Min time to threshold")
+    plt.xlabel("DEs")
+    plt.xticks(rotation=30, ha='right')
+    figname = "Min_time_to_threshold.png"
+    plt.savefig(os.path.join(top_path, "plots", figname))
+    plt.show(block=False)
+    plt.pause(0.001)
 
-plt.figure(figsize=(15, 8))
-plt.bar(de_names, mins[:, 0])
-plt.ylabel("Min time to threshold")
-plt.xlabel("DEs")
-plt.xticks(rotation=30, ha='right')
-figname = "Min_time_to_threshold.png"
-plt.savefig(os.path.join(top_path, "plots", figname))
-plt.show(block=False)
-plt.pause(0.001)
-
-plt.figure(figsize=(15, 8))
-plt.bar(de_names, maxs[:, 0])
-plt.ylabel("Max time to threshold")
-plt.xlabel("DEs")
-plt.xticks(rotation=30, ha='right')
-figname = "Max_time_to_threshold.png"
-plt.savefig(os.path.join(top_path, "plots", figname))
-plt.show(block=False)
-plt.pause(0.001)
+    plt.figure(figsize=(15, 8))
+    plt.bar(de_names, maxs[:, 0])
+    plt.ylabel("Max time to threshold")
+    plt.xlabel("DEs")
+    plt.xticks(rotation=30, ha='right')
+    figname = "Max_time_to_threshold.png"
+    plt.savefig(os.path.join(top_path, "plots", figname))
+    plt.show(block=False)
+    plt.pause(0.001)
 
 # show all plots in the end when running as script
 plt.show()
